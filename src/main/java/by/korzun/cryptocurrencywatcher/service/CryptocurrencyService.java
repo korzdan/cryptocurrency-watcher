@@ -3,8 +3,10 @@ package by.korzun.cryptocurrencywatcher.service;
 import by.korzun.cryptocurrencywatcher.dto.CryptocurrencyDTO;
 import by.korzun.cryptocurrencywatcher.exception.CryptocurrencyNotFound;
 import by.korzun.cryptocurrencywatcher.model.Cryptocurrency;
+import by.korzun.cryptocurrencywatcher.model.User;
 import by.korzun.cryptocurrencywatcher.repository.CryptocurrencyRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CryptocurrencyService {
 
     public static final String COIN_LORE_URL = "https://api.coinlore.net/api/ticker/?id=";
@@ -24,6 +27,7 @@ public class CryptocurrencyService {
     public static final int NUMBER_OF_COINS = 3;
 
     private final CryptocurrencyRepository cryptocurrencyRepository;
+    private final UserService userService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     public List<Cryptocurrency> getAvailableCryptocurrencies() {
@@ -47,6 +51,25 @@ public class CryptocurrencyService {
             cryptocurrencyRepository.updatePrice(COIN_IDS[i],
                     Objects.requireNonNull(response.getBody())[0].getPrice_usd());
         }
+        checkPriceChangingOfNotifiedCoins();
+    }
+
+    private void checkPriceChangingOfNotifiedCoins() {
+        List<User> users = userService.getAllUsers();
+        for (User user : users) {
+            double changePercent = getCryptocurrencyPriceChangeInPercent(
+                    user.getCryptocurrency().getPrice(),
+                    user.getStartingPrice());
+            if (Math.abs(changePercent) > 1) {
+                log.warn("Username: " + user.getUsername() +
+                        ". Symbol: " + user.getCryptocurrency().getSymbol() +
+                        ". Change percent: " + changePercent);
+            }
+        }
+    }
+
+    private double getCryptocurrencyPriceChangeInPercent(double actualPrice, double oldPrice) {
+        return (actualPrice - oldPrice) / oldPrice * 100;
     }
 
 }
