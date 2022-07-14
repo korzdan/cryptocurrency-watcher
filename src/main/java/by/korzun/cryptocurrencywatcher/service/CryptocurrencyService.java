@@ -60,7 +60,7 @@ public class CryptocurrencyService {
             double changePercent = getCryptocurrencyPriceChangeInPercent(
                     user.getCryptocurrency().getPrice(),
                     user.getStartingPrice());
-            if (Math.abs(changePercent) > 1) {
+            if (Math.abs(changePercent) > 1.0) {
                 log.warn("Username: " + user.getUsername() +
                         ". Symbol: " + user.getCryptocurrency().getSymbol() +
                         ". Change percent: " + changePercent);
